@@ -1,0 +1,9 @@
+boto3
+sagemaker
+mlflow
+evidently
+pydeequ
+pandas
+scikit-learn
+numpy
+jmespath

@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.htmlcov/
+coverage.xml
+
+# virtual envs
+venv/
+.venv/
+env/
+ENV/
+
+# env files
+.env
+.env.* 
