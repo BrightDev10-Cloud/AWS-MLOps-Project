@@ -1,0 +1,9 @@
+# Example terraform.tfvars for terraform/codepipeline
+region = "us-east-1"
+artifacts_bucket_name = "my-mlops-artifacts-bucket-12345"
+s3_bucket = "my-mlops-models-bucket-12345"
+github_owner = "BrightDev10-Cloud"
+github_repo = "AWS-MLOps-Project"
+branch = "main"
+# ARN for CodeStar connection to GitHub (create via AWS Console -> Developer Tools -> Connections)
+codestar_connection_arn = "arn:aws:codestar-connections:us-east-1:123456789012:connection/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"

@@ -1,9 +1,11 @@
-🧠 Comprehensive AWS MLOps Project Guide
+## 🧠 Comprehensive AWS MLOps Project Guide
+
 End-to-End ML Pipeline Deployment with Amazon SageMaker, CloudWatch, MLflow, and Evidently AI
 
 This guide provides a detailed, hands-on walkthrough for building, deploying, and monitoring a complete ML lifecycle with AWS SageMaker. It includes automated deployment to SageMaker Endpoints, CI/CD integration, CloudWatch Monitoring, and Evidently AI or Deequ-based drift detection.
 
-🚀 Architecture Overview
+## 🚀 Architecture Overview
+
 ![Project architectural diagram](screenshots/AWS_MLOPS_Project_diagram.png)
 
 ## Prerequisites & variables
@@ -21,14 +23,17 @@ Before you begin, set these variables or replace placeholders in commands and sc
 Install these Python packages for the examples (also provided in `requirements.txt`).
 
 ### Recommended: Use a Virtual Environment
+
 To avoid permission issues and keep project dependencies isolated, it's highly recommended to use a virtual environment.
 
 1.  **Create and activate the environment:**
+
     ```bash
     python3 -m venv venv
     source venv/bin/activate
     ```
-    *(Your shell prompt will change to show you're in the `(venv)` environment.)*
+
+    _(Your shell prompt will change to show you're in the `(venv)` environment.)_
 
 2.  **Install the requirements:**
     ```bash
@@ -37,7 +42,7 @@ To avoid permission issues and keep project dependencies isolated, it's highly r
 
 All packages will be installed inside the `./venv` directory. Remember to activate the environment whenever you open a new terminal session to work on the project.
 
-⚙️ Step-by-Step Implementation
+## ⚙️ Step-by-Step Implementation
 
 ### Step 1: Setup Your AWS Environment
 
@@ -63,6 +68,24 @@ Push raw data to `s3://$S3_BUCKET/raw/`.
 ETL with Airflow DAG (local or Amazon MWAA) to clean and store processed data.
 
 Store clean output in `s3://$S3_BUCKET/processed/`.
+
+We provide a small preprocessing helper for the Telco Customer Churn dataset:
+
+`preprocess_telco.py` — cleans dtypes, encodes categorical variables, performs a train/validation split, and writes `train.csv` and `val.csv` to a local `./processed` directory. It can also upload the processed CSVs to `s3://<bucket>/processed/` when run with `--upload` and `--s3-bucket`.
+
+Example usage (local):
+
+```bash
+python preprocess_telco.py --input-csv ~/Downloads/WA_Fn-UseC_-Telco-Customer-Churn.csv --output-dir ./processed
+```
+
+Example usage (upload to S3):
+
+```bash
+python preprocess_telco.py --input-csv ~/Downloads/WA_Fn-UseC_-Telco-Customer-Churn.csv --upload --s3-bucket my-mlops-bucket
+```
+
+After running, the pipeline expects processed data at `s3://$S3_BUCKET/processed/` or locally at `./processed/` for training.
 
 ### Step 3: Model Training and Experiment Tracking
 
@@ -104,26 +127,57 @@ model_package_arn = model.register(
 
 ### Step 5: CI/CD Pipelines (Automated Build & Deploy)
 
-Use GitHub Actions or AWS CodePipeline for:
+We recommend using AWS CodePipeline as the primary CI/CD orchestrator for this project. CodePipeline integrates natively with other AWS services (CodeCommit, CodeBuild, ECR, SageMaker, CloudWatch, SNS) and simplifies permission management within your AWS account.
 
-- Re-training on new data
-- Validation tests
-- Docker build & push to ECR
-- Endpoint redeploy (SageMaker)
+Typical pipeline stages:
 
-Sample GitHub Actions workflow (see `.github/workflows/ci.yml`):
+- Source: CodeCommit or GitHub (store your repo here; if using GitHub, connect via a GitHub token or the GitHub App integration).
+- Build: CodeBuild builds artifacts, runs tests, packages the model or container, and pushes images to ECR.
+- Deploy: CodeBuild or a custom action that invokes `deploy.py`/boto3 to create/update SageMaker Model and Endpoint (or use SageMaker Pipelines for model package promotion).
+- Optional: Manual approval or automated validation (smoke tests) before promoting to production.
+
+Key resources you'll use:
+
+- CodePipeline pipeline
+- CodeBuild project(s) with a build role that can read/write S3, push to ECR, and call SageMaker APIs
+- S3 artifact bucket (for pipeline artifacts)
+- IAM roles for CodePipeline/CodeBuild with least-privilege policies (see `docs/iam/sagemaker_role_policy.json` as a starting point)
+
+Example CodeBuild `buildspec.yml` (used in the Build/Deploy stage to install dependencies and run the deploy script):
 
 ```yaml
-name: mlops-pipeline
-on: [push]
-jobs:
-  build-deploy:
-	runs-on: ubuntu-latest
-	steps:
-	  - uses: actions/checkout@v3
-	  - run: pip install -r requirements.txt
-	  - run: python deploy.py # Deploy using boto3
+version: 0.2
+phases:
+	install:
+		runtime-versions:
+			python: 3.10
+		commands:
+			- python -m pip install --upgrade pip
+			- pip install -r requirements.txt
+	build:
+		commands:
+			- echo "Running deployment script"
+			- python deploy.py
+artifacts:
+	files:
+		- '**/*'
+	discard-paths: yes
 ```
+
+How to create the pipeline (overview):
+
+1. Create or choose an S3 bucket for pipeline artifacts.
+2. Create a CodeBuild project with the above `buildspec.yml` (or store it in your repo at `buildspec.yml`).
+3. Create a CodePipeline pipeline that uses your source provider (CodeCommit, GitHub) and the CodeBuild project as the Build/Deploy stage. Configure an IAM role for the pipeline that allows CodeBuild to assume the necessary permissions.
+4. Grant the CodeBuild role permissions to push to ECR (if building containers), access S3 artifacts, and call SageMaker/CreateModel/CreateEndpoint. Use least privilege — see `docs/iam/sagemaker_role_policy.json` as a starting example.
+
+You can create the pipeline using CloudFormation, the AWS Console, or the AWS CLI. For a simple test pipeline, you can create a CodeBuild project that runs on pushes to your repository (via webhook or CodePipeline) and runs `deploy.py` to perform the deployment step.
+
+Notes:
+
+- If your source repository is GitHub and you prefer an external CI provider for development branches, you can still use CodePipeline for production deployments by connecting the GitHub repo as the pipeline source.
+- For complex model promotion workflows, consider integrating SageMaker Pipelines to handle training, model evaluation, model registry, and promotion; then trigger SageMaker Pipeline executions from CodePipeline.
+- Ensure secrets and AWS credentials are stored in AWS Secrets Manager or passed via the CodeBuild project's environment variables and not committed to source.
 
 ### Step 6: Deploy Model to SageMaker Endpoints
 

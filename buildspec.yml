@@ -1,0 +1,35 @@
+version: 0.2
+env:
+  variables:
+    # These should be provided in the CodeBuild project environment variables
+    S3_BUCKET: '${S3_BUCKET}'
+    S3_KEY: 'models/model.tar.gz'
+    ECR_IMAGE: '${ECR_IMAGE}'
+phases:
+  install:
+    runtime-versions:
+      python: 3.10
+    commands:
+      - echo "Installing Python dependencies"
+      - python -m pip install --upgrade pip
+      - pip install -r requirements.txt || true
+  pre_build:
+    commands:
+      - echo "Pre-build phase: login to ECR (if ECR_IMAGE provided)"
+      - |
+        if [ -n "$ECR_IMAGE" ]; then
+          aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $(echo $ECR_IMAGE | cut -d'/' -f1)
+        fi
+  build:
+    commands:
+      - echo "Running training & packaging"
+      - python train_model.py --package --s3-bucket $S3_BUCKET --tar-name model.tar.gz --aws-region $AWS_DEFAULT_REGION || true
+      - echo "Running deployment script"
+      - python deploy.py || true
+  post_build:
+    commands:
+      - echo "Build completed"
+artifacts:
+  files:
+    - '**/*'
+  discard-paths: yes

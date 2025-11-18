@@ -1,0 +1,9 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      {
+        "deprecated": true,
+        "note": "This file is deprecated. Use the templated policy at codebuild_role_policy.tpl and let Terraform render it with your artifact bucket and ARNs."
+      }
+        "arn:aws:s3:::${ARTIFACTS_BUCKET}",
