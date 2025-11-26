@@ -10,12 +10,21 @@ Usage examples:
 
 import argparse
 import os
+import sys
 import boto3
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
 def clean_telco(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean and transform the Telco dataset.
+    
+    Args:
+        df: Raw dataframe from CSV
+        
+    Returns:
+        Cleaned dataframe with proper dtypes
+    """
     # Drop identifier
     if 'customerID' in df.columns:
         df = df.drop(columns=['customerID'])
@@ -29,7 +38,7 @@ def clean_telco(df: pd.DataFrame) -> pd.DataFrame:
     if 'TotalCharges' in df.columns:
         df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
 
-    # Fill numeric NaNs with 0 or median
+    # Fill numeric NaNs with median
     for num in df.select_dtypes(include=['float64', 'int64']).columns:
         if df[num].isnull().any():
             df[num] = df[num].fillna(df[num].median())
@@ -52,8 +61,13 @@ def clean_telco(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def upload_file(s3_client, local_path, bucket, key):
-    s3_client.upload_file(local_path, bucket, key)
-    print(f"Uploaded {local_path} to s3://{bucket}/{key}")
+    """Upload file to S3 with error handling."""
+    try:
+        s3_client.upload_file(local_path, bucket, key)
+        print(f"✓ Uploaded {local_path} to s3://{bucket}/{key}")
+    except Exception as e:
+        print(f"✗ Failed to upload {local_path} to s3://{bucket}/{key}: {e}", file=sys.stderr)
+        raise
 
 
 def main():
@@ -66,38 +80,51 @@ def main():
     parser.add_argument('--upload', action='store_true', help='Upload processed CSVs to S3 if s3-bucket provided')
     args = parser.parse_args()
 
-    os.makedirs(args.output_dir, exist_ok=True)
+    try:
+        os.makedirs(args.output_dir, exist_ok=True)
 
-    print(f"Loading {args.input_csv}...")
-    df = pd.read_csv(args.input_csv)
-    print(f"Initial shape: {df.shape}")
+        print(f"Loading {args.input_csv}...")
+        df = pd.read_csv(args.input_csv)
+        print(f"Initial shape: {df.shape}")
 
-    df_clean = clean_telco(df)
-    print(f"After cleaning shape: {df_clean.shape}")
+        df_clean = clean_telco(df)
+        print(f"After cleaning shape: {df_clean.shape}")
 
-    target = 'Churn' if 'Churn' in df_clean.columns else None
-    if target:
-        X = df_clean.drop(columns=[target])
-        y = df_clean[target]
-        X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=args.test_size, random_state=args.random_state, stratify=y)
-        train_df = pd.concat([X_train, y_train.reset_index(drop=True)], axis=1)
-        val_df = pd.concat([X_val, y_val.reset_index(drop=True)], axis=1)
-    else:
-        train_df, val_df = train_test_split(df_clean, test_size=args.test_size, random_state=args.random_state)
+        target = 'Churn' if 'Churn' in df_clean.columns else None
+        if target:
+            X = df_clean.drop(columns=[target])
+            y = df_clean[target]
+            X_train, X_val, y_train, y_val = train_test_split(
+                X, y, test_size=args.test_size, random_state=args.random_state, stratify=y
+            )
+            train_df = pd.concat([X_train, y_train.reset_index(drop=True)], axis=1)
+            val_df = pd.concat([X_val, y_val.reset_index(drop=True)], axis=1)
+        else:
+            train_df, val_df = train_test_split(
+                df_clean, test_size=args.test_size, random_state=args.random_state
+            )
 
-    train_path = os.path.join(args.output_dir, 'train.csv')
-    val_path = os.path.join(args.output_dir, 'val.csv')
-    train_df.to_csv(train_path, index=False)
-    val_df.to_csv(val_path, index=False)
-    print(f"Saved train -> {train_path}, val -> {val_path}")
+        train_path = os.path.join(args.output_dir, 'train.csv')
+        val_path = os.path.join(args.output_dir, 'val.csv')
+        train_df.to_csv(train_path, index=False)
+        val_df.to_csv(val_path, index=False)
+        print(f"✓ Saved train ({len(train_df)} rows) -> {train_path}")
+        print(f"✓ Saved val ({len(val_df)} rows) -> {val_path}")
 
-    if args.upload:
-        if not args.s3_bucket:
-            raise SystemExit('s3-bucket is required when --upload is set')
-        s3 = boto3.client('s3')
-        upload_file(s3, train_path, args.s3_bucket, 'processed/train.csv')
-        upload_file(s3, val_path, args.s3_bucket, 'processed/val.csv')
+        if args.upload:
+            if not args.s3_bucket:
+                raise ValueError('--s3-bucket is required when --upload is set')
+            s3 = boto3.client('s3')
+            upload_file(s3, train_path, args.s3_bucket, 'processed/train.csv')
+            upload_file(s3, val_path, args.s3_bucket, 'processed/val.csv')
+            
+        print("✓ Preprocessing completed successfully")
+        return 0
+        
+    except Exception as e:
+        print(f"✗ Preprocessing failed: {e}", file=sys.stderr)
+        return 1
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

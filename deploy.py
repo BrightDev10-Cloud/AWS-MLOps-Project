@@ -1,24 +1,29 @@
 """deploy.py
-Small utility to create a SageMaker Model and Endpoint from an existing model artifact stored in S3.
-Reads configuration from environment variables or defaults and performs basic validation.
+Utility to create a SageMaker Model and Endpoint from an existing model artifact stored in S3.
+Reads configuration from environment variables or .env file and performs validation.
 """
 
-import os
+import sys
 import time
 import boto3
 from botocore.exceptions import ClientError
+from config import config
 
-REGION = os.environ.get('AWS_REGION', 'us-east-1')
-S3_BUCKET = os.environ.get('S3_BUCKET')
-S3_KEY = os.environ.get('S3_KEY', 'models/model.tar.gz')
-MODEL_NAME = os.environ.get('MODEL_NAME', 'mlops-model-v1')
-ENDPOINT_NAME = os.environ.get('ENDPOINT_NAME', 'mlops-endpoint')
-ECR_IMAGE = os.environ.get('ECR_IMAGE')
-SAGEMAKER_ROLE_ARN = os.environ.get('SAGEMAKER_ROLE_ARN')
+# Validate configuration
+missing = config.validate()
+if missing:
+    print(f"ERROR: Missing required configuration: {', '.join(missing)}", file=sys.stderr)
+    print("Please set these in your .env file or environment variables.", file=sys.stderr)
+    sys.exit(1)
 
-if not S3_BUCKET or not ECR_IMAGE or not SAGEMAKER_ROLE_ARN:
-    print("Required environment variables missing. Set S3_BUCKET, ECR_IMAGE, and SAGEMAKER_ROLE_ARN.")
-    raise SystemExit(1)
+# Load configuration
+REGION = config.aws_region
+S3_BUCKET = config.s3_bucket
+S3_KEY = config.s3_key
+MODEL_NAME = config.model_name
+ENDPOINT_NAME = config.endpoint_name
+ECR_IMAGE = config.ecr_image
+SAGEMAKER_ROLE_ARN = config.sagemaker_role_arn
 
 sm = boto3.client('sagemaker', region_name=REGION)
 s3 = boto3.client('s3', region_name=REGION)

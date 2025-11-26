@@ -12,23 +12,43 @@ phases:
     commands:
       - echo "Installing Python dependencies"
       - python -m pip install --upgrade pip
-      - pip install -r requirements.txt || true
+      - pip install -r requirements.txt
   pre_build:
     commands:
       - echo "Pre-build phase: login to ECR (if ECR_IMAGE provided)"
       - |
         if [ -n "$ECR_IMAGE" ]; then
+          echo "Logging in to ECR..."
           aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $(echo $ECR_IMAGE | cut -d'/' -f1)
+          if [ $? -ne 0 ]; then
+            echo "ERROR: ECR login failed"
+            exit 1
+          fi
         fi
   build:
     commands:
       - echo "Running training & packaging"
-      - python train_model.py --package --s3-bucket $S3_BUCKET --tar-name model.tar.gz --aws-region $AWS_DEFAULT_REGION || true
+      - |
+        python train_model.py --package --s3-bucket $S3_BUCKET --tar-name model.tar.gz --aws-region $AWS_DEFAULT_REGION
+        if [ $? -ne 0 ]; then
+          echo "ERROR: Training failed"
+          exit 1
+        fi
       - echo "Running deployment script"
-      - python deploy.py || true
+      - |
+        python deploy.py
+        if [ $? -ne 0 ]; then
+          echo "ERROR: Deployment failed"
+          exit 1
+        fi
   post_build:
     commands:
-      - echo "Build completed"
+      - echo "Build completed successfully"
+      - |
+        if [ $CODEBUILD_BUILD_SUCCEEDING -eq 0 ]; then
+          echo "Build failed - check logs above"
+          exit 1
+        fi
 artifacts:
   files:
     - '**/*'

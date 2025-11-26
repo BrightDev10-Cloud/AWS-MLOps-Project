@@ -1,9 +1,22 @@
+# AWS SDK
 boto3
 sagemaker
+
+# ML/Data Science
+pandas
+numpy
+scikit-learn
+
+# MLOps & Monitoring
 mlflow
 evidently
 pydeequ
-pandas
-scikit-learn
-numpy
+
+# Utilities
 jmespath
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+moto>=4.0.0
+

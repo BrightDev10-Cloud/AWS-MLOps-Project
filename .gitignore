@@ -6,6 +6,9 @@ __pycache__/
 .pytest_cache/
 .htmlcov/
 coverage.xml
+*.cover
+.coverage
+.coverage.*
 
 # virtual envs
 venv/
@@ -13,6 +16,27 @@ venv/
 env/
 ENV/
 
-# env files
+# env files (but allow .env.example)
 .env
-.env.* 
+.env.local
+.env.*.local
+
+# Test artifacts
+htmlcov/
+.tox/
+.nox/
+*.log
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Monitoring outputs
+drift_report.html
+drift_results.json
+*.tar.gz
+
+# Model artifacts
+model.joblib
+metrics.json
+processed/ 
