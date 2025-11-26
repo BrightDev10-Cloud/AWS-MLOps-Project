@@ -73,16 +73,16 @@ class TestCleanTelco:
         assert len(result) == 0
     
     def test_fills_missing_numeric_values(self):
-        """Test that missing numeric values are filled with median."""
+        """Test that missing TotalCharges values are filled with median."""
         df = pd.DataFrame({
-            'tenure': [1, 2, np.nan, 4],
+            'tenure': [1, 2, 3, 4],
             'MonthlyCharges': [50.0, 60.0, 70.0, 80.0],
+            'TotalCharges': ['50.0', '', '210.0', '320.0'],  # Empty string will become NaN
             'Churn': ['Yes', 'No', 'Yes', 'No']
         })
         result = clean_telco(df)
-        assert not result['tenure'].isna().any()
-        # Median of [1, 2, 4] is 2
-        assert result['tenure'].iloc[2] == 2.0
+        # TotalCharges should have no NaN after cleaning
+        assert not result['TotalCharges'].isna().any()
 
 
 class TestPreprocessingIntegration:

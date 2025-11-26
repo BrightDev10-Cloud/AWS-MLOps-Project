@@ -4,14 +4,6 @@ End-to-End ML Pipeline Deployment with Amazon SageMaker, CloudWatch, MLflow, and
 
 This guide provides a detailed, hands-on walkthrough for building, deploying, and monitoring a complete ML lifecycle with AWS SageMaker. It includes automated deployment to SageMaker Endpoints, CI/CD integration, CloudWatch Monitoring, MLflow experiment tracking, and Evidently AI drift detection.
 
-> **🆕 Recent Updates**: This project has been enhanced with comprehensive testing, MLflow integration, drift detection, and improved error handling. See [IMPROVEMENTS.md](IMPROVEMENTS.md) for details.
-
-## 📚 Quick Navigation
-
-- **New User?** Start with [CHECKLIST.md](CHECKLIST.md) for step-by-step setup
-- **Need Commands?** Check [QUICKSTART.md](QUICKSTART.md) for quick reference
-- **Want Details?** See [IMPROVEMENTS.md](IMPROVEMENTS.md) for recent enhancements
-- **Overview Needed?** Review [SUMMARY.md](SUMMARY.md) for project highlights
 
 ## 🚀 Architecture Overview
 
@@ -228,7 +220,7 @@ python preprocess_telco.py \
 - Binary encoding for Yes/No fields
 - Stratified train/validation split
 
-### Step 3: Model Training with MLflow (NEW)
+### Step 3: Model Training with MLflow 
 
 **Start MLflow tracking server** (in separate terminal):
 
@@ -390,7 +382,7 @@ prediction = response['Body'].read()
 print(f"Prediction: {prediction}")
 ```
 
-### Step 6: Monitoring and Drift Detection (NEW)
+### Step 6: Monitoring and Drift Detection
 
 **Enable data capture** on SageMaker endpoint:
 
@@ -525,7 +517,7 @@ git push origin main
 4. Run deployment script
 5. Deploy to SageMaker
 
-### Step 8: Testing (NEW)
+### Step 8: Testing 
 
 **Run all tests**:
 
@@ -659,18 +651,18 @@ aws events put-targets \
 ```
 AWS_MLOps_Project/
 ├── Core Pipeline Scripts
-│   ├── preprocess_telco.py       # Data preprocessing (enhanced)
+│   ├── preprocess_telco.py       # Data preprocessing 
 │   ├── train_model.py            # Model training with MLflow
 │   ├── deploy.py                 # SageMaker deployment
-│   └── drift_detection.py        # NEW: Evidently AI monitoring
+│   └── drift_detection.py        # Evidently AI monitoring
 │
 ├── Configuration
-│   ├── .env.example              # NEW: Environment template
-│   ├── config.py                 # NEW: Centralized config
+│   ├── .env.example              # Environment template
+│   ├── config.py                 # Centralized config
 │   └── requirements.txt          # Python dependencies
 │
 ├── CI/CD
-│   ├── buildspec.yml             # AWS CodeBuild spec (improved)
+│   ├── buildspec.yml             # AWS CodeBuild spec 
 │   ├── .github/workflows/ci.yml  # GitHub Actions workflow
 │   └── terraform/                # Infrastructure as Code
 │       └── codepipeline/
@@ -680,8 +672,8 @@ AWS_MLOps_Project/
 │           └── terraform.tfvars.example
 │
 ├── Testing
-│   ├── pyproject.toml            # NEW: Pytest configuration
-│   └── tests/                    # NEW: Comprehensive test suite
+│   ├── pyproject.toml            # Pytest configuration
+│   └── tests/                    # Comprehensive test suite
 │       ├── __init__.py
 │       ├── test_preprocess.py    # Preprocessing tests
 │       ├── test_training.py      # Training tests
@@ -689,10 +681,10 @@ AWS_MLOps_Project/
 │
 ├── Documentation
 │   ├── readme.md                 # This file
-│   ├── CHECKLIST.md              # NEW: Step-by-step setup
-│   ├── QUICKSTART.md             # NEW: Quick reference
-│   ├── IMPROVEMENTS.md           # NEW: Enhancement details
-│   ├── SUMMARY.md                # NEW: Project overview
+│   ├── CHECKLIST.md              # Step-by-step setup
+│   ├── QUICKSTART.md             # Quick reference
+│   ├── IMPROVEMENTS.md           # Enhancement details
+│   ├── SUMMARY.md                # Project overview
 │   └── docs/
 │       └── iam/                  # IAM policy templates  
 │           ├── sagemaker_role_policy.json
@@ -990,29 +982,9 @@ ENVIRONMENT=prod python deploy.py
 5. **AutoML**: Integrate SageMaker Autopilot
 6. **Multi-region**: Deploy across multiple AWS regions
 
-## 📚 Additional Resources
 
-### Documentation
 
-- [AWS SageMaker Developer Guide](https://docs.aws.amazon.com/sagemaker/)
-- [MLflow Documentation](https://mlflow.org/docs/latest/index.html)
-- [Evidently AI Documentation](https://docs.evidentlyai.com/)
-- [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-
-### Internal Documentation
-
-- [IMPROVEMENTS.md](IMPROVEMENTS.md) - Recent enhancements
-- [QUICKSTART.md](QUICKSTART.md) - Command reference
-- [CHECKLIST.md](CHECKLIST.md) - Setup guide
-- [SUMMARY.md](SUMMARY.md) - Project overview
-
-### Community
-
-- [AWS ML Blog](https://aws.amazon.com/blogs/machine-learning/)
-- [MLflow GitHub](https://github.com/mlflow/mlflow)
-- [Evidently GitHub](https://github.com/evidentlyai/evidently)
-
-## 🤝 Contributing
+## 🤝 Contributing?
 
 When contributing:
 
@@ -1026,18 +998,6 @@ When contributing:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🎉 Conclusion
 
-You now have a complete, production-ready MLOps pipeline with:
-
-✅ Automated preprocessing and training  
-✅ MLflow experiment tracking  
-✅ Drift detection and monitoring  
-✅ CI/CD integration  
-✅ Comprehensive testing  
-✅ Infrastructure as Code  
-✅ Best practices implementation  
-
-For questions or issues, review the documentation files or create an issue in the repository.
 
 **Happy MLOps-ing! 🚀**

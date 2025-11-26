@@ -10,9 +10,10 @@ import sys
 from pathlib import Path
 import pandas as pd
 import boto3
-from evidently.report import Report
-from evidently.metric_preset import DataDriftPreset, DataQualityPreset
-from evidently.metrics import DatasetDriftMetric, ColumnDriftMetric
+from evidently import Report
+from evidently.presets import DataDriftPreset, DataSummaryPreset
+# DatasetDriftMetric is not directly available in top-level metrics in this version, 
+# but DataDriftPreset covers it.
 from config import config
 
 

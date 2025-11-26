@@ -32,9 +32,14 @@ def upload_to_s3(tar_path, bucket, key, region=None):
 
 
 def main(args):
-    # Set up MLflow
-    mlflow.set_tracking_uri(config.mlflow_tracking_uri)
-    mlflow.set_experiment(config.mlflow_experiment_name)
+    # Set up MLflow for local tracking (no server required)
+    try:
+        mlflow.set_tracking_uri("file:./mlruns")  # Use local directory
+        mlflow.set_experiment(config.mlflow_experiment_name)
+        mlflow_available = True
+    except Exception as e:
+        print(f"Warning: MLflow tracking disabled: {e}", file=sys.stderr)
+        mlflow_available = False
     
     # Read processed train/val CSVs
     train_path = args.train_csv if args.train_csv else os.path.join('processed', 'train.csv')
@@ -58,13 +63,19 @@ def main(args):
         X_val = X_train
         y_val = y_train
 
-    # Start MLflow run
-    with mlflow.start_run():
-        # Log parameters
-        mlflow.log_param("n_estimators", args.n_estimators)
-        mlflow.log_param("random_state", 42)
-        mlflow.log_param("train_samples", len(X_train))
-        mlflow.log_param("val_samples", len(X_val))
+    # Start MLflow run (only if available)
+    if mlflow_available:
+        mlflow_run = mlflow.start_run()
+    else:
+        mlflow_run = None
+    
+    try:
+        # Log parameters to MLflow
+        if mlflow_available:
+            mlflow.log_param("n_estimators", args.n_estimators)
+            mlflow.log_param("random_state", 42)
+            mlflow.log_param("train_samples", len(X_train))
+            mlflow.log_param("val_samples", len(X_val))
         
         # Train model
         model = RandomForestClassifier(n_estimators=args.n_estimators, random_state=42)
@@ -80,8 +91,9 @@ def main(args):
         }
 
         # Log metrics to MLflow
-        for metric_name, metric_value in metrics.items():
-            mlflow.log_metric(metric_name, metric_value)
+        if mlflow_available:
+            for metric_name, metric_value in metrics.items():
+                mlflow.log_metric(metric_name, metric_value)
 
         # ensure output directory
         out_dir = os.path.dirname(args.output_model) or '.'
@@ -92,7 +104,8 @@ def main(args):
         print(f"✓ Saved model to {args.output_model}")
 
         # Log model to MLflow
-        mlflow.sklearn.log_model(model, "model")
+        if mlflow_available:
+            mlflow.sklearn.log_model(model, "model")
 
         # save metrics alongside model
         metrics_path = args.metrics_path if args.metrics_path else os.path.join(out_dir, 'metrics.json')
@@ -101,7 +114,8 @@ def main(args):
         print(f"✓ Saved metrics to {metrics_path}")
         
         # Log metrics file as artifact
-        mlflow.log_artifact(metrics_path)
+        if mlflow_available:
+            mlflow.log_artifact(metrics_path)
 
         print("Validation metrics:")
         for k, v in metrics.items():
@@ -120,11 +134,17 @@ def main(args):
                 print(f"✓ Uploaded {tar_path} to s3://{args.s3_bucket}/{s3_key}")
                 
                 # Log S3 URI to MLflow
-                mlflow.log_param("s3_model_uri", f"s3://{args.s3_bucket}/{s3_key}")
+                if mlflow_available:
+                    mlflow.log_param("s3_model_uri", f"s3://{args.s3_bucket}/{s3_key}")
         
         # Log run info
-        run_id = mlflow.active_run().info.run_id
-        print(f"✓ MLflow run completed: {run_id}")
+        if mlflow_available:
+            run_id = mlflow.active_run().info.run_id
+            print(f"✓ MLflow run completed: {run_id}")
+        
+    finally:
+        if mlflow_run:
+            mlflow.end_run()
         
     return 0
 

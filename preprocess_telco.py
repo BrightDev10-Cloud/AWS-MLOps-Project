@@ -25,11 +25,14 @@ def clean_telco(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         Cleaned dataframe with proper dtypes
     """
+    # Make a copy to avoid modifying original
+    df = df.copy()
+    
     # Drop identifier
     if 'customerID' in df.columns:
         df = df.drop(columns=['customerID'])
 
-    # Strip whitespace from string columns
+    # Strip whitespace from all string columns
     obj_cols = df.select_dtypes(include=['object']).columns
     for c in obj_cols:
         df[c] = df[c].str.strip()
@@ -37,26 +40,51 @@ def clean_telco(df: pd.DataFrame) -> pd.DataFrame:
     # Convert TotalCharges to numeric (some rows are empty strings)
     if 'TotalCharges' in df.columns:
         df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
+        # Fill TotalCharges NaN with median
+        if df['TotalCharges'].isna().any():
+            df['TotalCharges'] = df['TotalCharges'].fillna(df['TotalCharges'].median())
 
-    # Fill numeric NaNs with median
-    for num in df.select_dtypes(include=['float64', 'int64']).columns:
-        if df[num].isnull().any():
-            df[num] = df[num].fillna(df[num].median())
-
-    # Binary mapping for common Yes/No columns
-    yes_no_cols = [c for c in df.columns if df[c].dtype == 'object' and df[c].isin(['Yes', 'No']).any()]
-    for c in yes_no_cols:
-        df[c] = df[c].map({'Yes': 1, 'No': 0}).fillna(df[c])
-
-    # Target column mapping
+    # Handle Churn FIRST - convert Yes/No to 1/0
     if 'Churn' in df.columns:
         df['Churn'] = df['Churn'].map({'Yes': 1, 'No': 0})
-
-    # One-hot encode remaining categorical object columns
-    remaining_obj = df.select_dtypes(include=['object']).columns.tolist()
-    if remaining_obj:
-        df = pd.get_dummies(df, columns=remaining_obj, drop_first=True)
-
+    
+    # Encode all other Yes/No columns as 1/0
+    binary_cols = ['Partner', 'Dependents', 'PhoneService', 'PaperlessBilling']
+    for col in binary_cols:
+        if col in df.columns:
+            df[col] = df[col].map({'Yes': 1, 'No': 0})
+    
+    # Handle columns with "No internet service" / "No phone service" values
+    # These should map: Yes->1, No->0, "No service"->0
+    service_cols = {
+        'MultipleLines': {'Yes': 1, 'No': 0, 'No phone service': 0},
+        'OnlineSecurity': {'Yes': 1, 'No': 0, 'No internet service': 0},
+        'OnlineBackup': {'Yes': 1, 'No': 0, 'No internet service': 0},
+        'DeviceProtection': {'Yes': 1, 'No': 0, 'No internet service': 0},
+        'TechSupport': {'Yes': 1, 'No': 0, 'No internet service': 0},
+        'StreamingTV': {'Yes': 1, 'No': 0, 'No internet service': 0},
+        'StreamingMovies': {'Yes': 1, 'No': 0, 'No internet service': 0}
+    }
+    
+    for col, mapping in service_cols.items():
+        if col in df.columns:
+            df[col] = df[col].map(mapping)
+    
+    # One-hot encode remaining categorical columns
+    categorical_cols = ['gender', 'InternetService', 'Contract', 'PaymentMethod']
+    existing_categ = [c for c in categorical_cols if c in df.columns]
+    
+    if existing_categ:
+        df = pd.get_dummies(df, columns=existing_categ, drop_first=True)
+    
+    # Drop any rows with NaN in Churn (target variable)
+    if 'Churn' in df.columns:
+        before = len(df)
+        df = df.dropna(subset=['Churn'])
+        after = len(df)
+        if before != after:
+            print(f"Dropped {before - after} rows with missing Churn values")
+    
     return df
 
 
@@ -97,8 +125,8 @@ def main():
             X_train, X_val, y_train, y_val = train_test_split(
                 X, y, test_size=args.test_size, random_state=args.random_state, stratify=y
             )
-            train_df = pd.concat([X_train, y_train.reset_index(drop=True)], axis=1)
-            val_df = pd.concat([X_val, y_val.reset_index(drop=True)], axis=1)
+            train_df = pd.concat([X_train.reset_index(drop=True), y_train.reset_index(drop=True)], axis=1)
+            val_df = pd.concat([X_val.reset_index(drop=True), y_val.reset_index(drop=True)], axis=1)
         else:
             train_df, val_df = train_test_split(
                 df_clean, test_size=args.test_size, random_state=args.random_state
