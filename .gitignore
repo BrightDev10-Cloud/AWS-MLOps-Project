@@ -40,3 +40,10 @@ drift_results.json
 model.joblib
 metrics.json
 processed/ 
+
+#Readme files
+QUICKSTART.md
+IMPROVEMENTS.md
+AWS_CREDENTIALS_GUIDE.md  
+README_UPDATE_SUMMARY.md  
+SUMMARY.md
