@@ -2,8 +2,8 @@
 
 ## A Complete Guide to Learning MLOps Without Cloud Costs
 
-**Author**: Abdul Rogers  
-**Date**: November 2024  
+**Author**: Abdulazeez  
+**Date**: November 2025 
 **Reading Time**: 20 minutes  
 **Level**: Intermediate  
 
@@ -74,64 +74,7 @@ Once your local pipeline works perfectly, deploying to AWS becomes a configurati
 ## Architecture Overview
 
 Our local MLOps pipeline includes all the essential components of a production system:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    LOCAL MLOPS PIPELINE                      │
-└─────────────────────────────────────────────────────────────┘
-
-┌──────────────────┐
-│  Raw Data (CSV)  │  ← Telco Customer Churn Dataset (7,043 rows)
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────────────────────┐
-│  Data Preprocessing Pipeline     │
-│  • Clean missing values          │
-│  • Encode categorical features   │
-│  • Train/validation split        │
-│  • Quality checks                │
-└────────┬─────────────────────────┘
-         │
-         ▼
-┌──────────────────┐      ┌──────────────────┐
-│  Training Data   │      │ Validation Data  │
-│  (5,634 rows)    │      │  (1,409 rows)    │
-└────────┬─────────┘      └────────┬─────────┘
-         │                         │
-         └──────────┬──────────────┘
-                    ▼
-         ┌─────────────────────────┐
-         │  Model Training          │
-         │  • RandomForest (50)     │
-         │  • MLflow tracking       │
-         │  • Metrics logging       │
-         └──────────┬───────────────┘
-                    │
-         ┌──────────┴──────────┐
-         │                     │
-         ▼                     ▼
-┌──────────────────┐  ┌──────────────────┐
-│  Trained Model   │  │  MLflow Server   │
-│  (model.joblib)  │  │  (localhost:5000)│
-└──────────────────┘  └──────────────────┘
-         │
-         ▼
-┌────────────────────────────────┐
-│  Monitoring & Drift Detection  │
-│  • Statistical tests (KS test) │
-│  • HTML reports                │
-│  • Threshold alerts            │
-└────────────────────────────────┘
-         │
-         ▼
-┌────────────────────────────────┐
-│  Testing & Validation          │
-│  • 18 comprehensive tests      │
-│  • 94% pass rate               │
-│  • Coverage reporting          │
-└────────────────────────────────┘
-```
+![Local_MLOps_Pipeline](images/Local_MLOps_Pipeline.png)
 
 ---
 

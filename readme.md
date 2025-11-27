@@ -231,6 +231,11 @@ mlflow ui --host 0.0.0.0 --port 5000
 # Access at http://localhost:5000
 ```
 
+> **💡 Pro tip**: The warnings about "Filesystem tracking backend deprecated" are just warnings. Your MLflow still works perfectly! To silence them in the future, you can use a SQLite backend:
+> ```bash
+> mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
+> ```
+
 **Train model locally**:
 
 ```bash
